@@ -18,6 +18,32 @@ dependencies {
 
     // https://mvnrepository.com/artifact/net.fabricmc/fabric-loader
     implementation 'net.fabricmc:fabric-loader:0.14.1'
+
+    // fabric-loader dependencies
+
+    // https://mvnrepository.com/artifact/org.ow2.asm/asm
+    implementation "org.ow2.asm:asm:${project.asm_version}"
+    implementation "org.ow2.asm:asm-analysis:${project.asm_version}"
+    implementation "org.ow2.asm:asm-commons:${project.asm_version}"
+    implementation "org.ow2.asm:asm-tree:${project.asm_version}"
+    implementation "org.ow2.asm:asm-util:${project.asm_version}"
+
+    implementation("net.fabricmc:sponge-mixin:${project.mixin_version}") {
+        exclude module: 'launchwrapper'
+        exclude module: 'guava'
+    }
+    implementation 'net.fabricmc:tiny-mappings-parser:0.3.0+build.17'
+    implementation 'net.fabricmc:tiny-remapper:0.8.2'
+    implementation 'net.fabricmc:access-widener:2.1.0'
+
+    // hello dependencies
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-slf4j-impl
+    implementation 'org.apache.logging.log4j:log4j-slf4j2-impl:2.19.0'
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core
+    implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
+    // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j
+    implementation 'org.apache.logging.log4j:log4j:2.19.0'
+
 }
 
 test {

@@ -4,6 +4,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.impl.game.GameProvider;
+import net.fabricmc.loader.impl.game.minecraft.Slf4jLogHandler;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
 import net.fabricmc.loader.impl.launch.FabricLauncher;
 import net.fabricmc.loader.impl.metadata.BuiltinModMetadata;
@@ -37,7 +38,6 @@ public class HelloWorldGameProvider implements GameProvider {
 	private final List<Path> gameJars = new ArrayList<>(2); // env game jar and potentially common game jar
 	private final Set<Path> logJars = new HashSet<>();
 	private final List<Path> miscGameLibraries = new ArrayList<>(); // libraries not relevant for loader's uses
-	private Collection<Path> validParentClassPath; // computed parent class path restriction (loader+deps)
 	private boolean hasModLoader = false;
 
 	private static final GameTransformer TRANSFORMER = new GameTransformer();
@@ -158,8 +158,7 @@ public class HelloWorldGameProvider implements GameProvider {
 
 	@Override
 	public void initialize(FabricLauncher launcher) {
-		launcher.setValidParentClassPath(validParentClassPath);
-		Log.init(new StringLogger());
+		Log.init(new Slf4jLogHandler());
 		TRANSFORMER.locateEntrypoints(launcher, gameJars);
 	}
 
