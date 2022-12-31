@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "example_mod",
+  "name": "Example Mod",
+  "version": "1.0.0",
+  "entrypoints": {
+    "main": [
+      "tk.minersonline.ExampleMod.ExampleMod"
+    ]
+  },
+  "mixins": [
+    {
+      "config": "example_mod.mixins.client.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "hello_world": ">=0.0.1"
+  }
+}

@@ -43,9 +43,23 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-core:2.19.0'
     // https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j
     implementation 'org.apache.logging.log4j:log4j:2.19.0'
+    implementation 'io.github.classgraph:classgraph:4.8.153'
 
+    runtimeOnly project(":ExampleMod")
 }
 
 test {
     useJUnitPlatform()
+}
+
+task RunClient(type: JavaExec) {
+    classpath sourceSets.main.runtimeClasspath
+    main = "tk.minersonline.FabricHello.LaunchClient"
+    jvmArgs "-Dfabric.addMods=\"ExampleMod/build/libs\""
+}
+
+task RunServer(type: JavaExec) {
+    classpath sourceSets.main.runtimeClasspath
+    main = "tk.minersonline.FabricHello.LaunchServer"
+    jvmArgs "-Dfabric.addMods=\"ExampleMod/build/libs\""
 }

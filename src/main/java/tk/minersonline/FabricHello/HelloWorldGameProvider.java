@@ -1,9 +1,13 @@
 package tk.minersonline.FabricHello;
 
+import io.github.classgraph.ClassGraph;
 import net.fabricmc.api.EnvType;
+import net.fabricmc.loader.api.ObjectShare;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ModDependency;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
+import net.fabricmc.loader.impl.FabricLoaderImpl;
+import net.fabricmc.loader.impl.FormattedException;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.minecraft.Slf4jLogHandler;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
@@ -13,18 +17,26 @@ import net.fabricmc.loader.impl.metadata.ModDependencyImpl;
 import net.fabricmc.loader.impl.util.Arguments;
 import net.fabricmc.loader.impl.util.LoaderUtil;
 import net.fabricmc.loader.impl.util.log.Log;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.slf4j.SLF4JServiceProvider;
+import org.slf4j.LoggerFactory;
 import tk.minersonline.FabricHello.main.ClientMain;
-import tk.minersonline.FabricHello.main.ServerMain;
 
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
 public class HelloWorldGameProvider implements GameProvider {
-
 	private EnvType envType;
 	private Arguments arguments;
-	private final List<Path> gameJars = new ArrayList<>(2); // env game jar and potentially common game jar
+	private final List<Path> gameJars = new ArrayList<>();
 
 	private static final GameTransformer TRANSFORMER = new GameTransformer();
 
@@ -78,7 +90,6 @@ public class HelloWorldGameProvider implements GameProvider {
 		if (arguments == null) {
 			return Paths.get(".");
 		}
-
 		return getLaunchDirectory(arguments);
 	}
 
@@ -103,7 +114,12 @@ public class HelloWorldGameProvider implements GameProvider {
 		this.arguments = new Arguments();
 		arguments.parse(args);
 
-		gameJars.add(Paths.get(""));
+		List<URI> classpath = new ClassGraph().getClasspathURIs();
+		for (URI url : classpath) {
+			gameJars.add(Path.of(url));
+		}
+		ObjectShare share = FabricLoaderImpl.INSTANCE.getObjectShare();
+		share.put("fabric-loader:inputGameJars", gameJars);
 		return true;
 	}
 
@@ -167,14 +183,28 @@ public class HelloWorldGameProvider implements GameProvider {
 	}
 
 	@Override
-	public void unlockClassPath(FabricLauncher launcher) {}
+	public void unlockClassPath(FabricLauncher launcher) {
+		for (Path gameJar : gameJars) {
+			launcher.addToClassPath(gameJar);
+		}
+	}
 
 	@Override
 	public void launch(ClassLoader loader) {
+		String targetClass = "tk.minersonline.FabricHello.main.ServerMain";
+
 		if (envType == EnvType.CLIENT) {
-			ClientMain.main(arguments.toArray());
-		} else {
-			ServerMain.main(arguments.toArray());
+			targetClass = "tk.minersonline.FabricHello.main.ClientMain";
+		}
+
+		try {
+			Class<?> c = loader.loadClass(targetClass);
+			Method m = c.getMethod("main", String[].class);
+			m.invoke(null, (Object) arguments.toArray());
+		} catch (InvocationTargetException e) {
+			throw new FormattedException("Hello World has crashed!", e.getCause());
+		} catch (ReflectiveOperationException e) {
+			throw new FormattedException("Failed to start Hello World", e);
 		}
 	}
 }
