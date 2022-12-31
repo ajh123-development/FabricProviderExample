@@ -3,6 +3,7 @@ package tk.minersonline.FabricHello;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.VersionParsingException;
 import net.fabricmc.loader.api.metadata.ModDependency;
+import net.fabricmc.loader.api.metadata.ModEnvironment;
 import net.fabricmc.loader.impl.game.GameProvider;
 import net.fabricmc.loader.impl.game.minecraft.Slf4jLogHandler;
 import net.fabricmc.loader.impl.game.patch.GameTransformer;
@@ -20,25 +21,10 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class HelloWorldGameProvider implements GameProvider {
-	private static final Set<String> SENSITIVE_ARGS = new HashSet<>(Arrays.asList(
-			// all lowercase without --
-			"accesstoken",
-			"clientid",
-			"profileproperties",
-			"proxypass",
-			"proxyuser",
-			"username",
-			"userproperties",
-			"uuid",
-			"xuid"));
 
 	private EnvType envType;
-	private String entrypoint;
 	private Arguments arguments;
 	private final List<Path> gameJars = new ArrayList<>(2); // env game jar and potentially common game jar
-	private final Set<Path> logJars = new HashSet<>();
-	private final List<Path> miscGameLibraries = new ArrayList<>(); // libraries not relevant for loader's uses
-	private boolean hasModLoader = false;
 
 	private static final GameTransformer TRANSFORMER = new GameTransformer();
 
@@ -64,8 +50,12 @@ public class HelloWorldGameProvider implements GameProvider {
 
 	@Override
 	public Collection<BuiltinMod> getBuiltinMods() {
-		BuiltinModMetadata.Builder metadata = new BuiltinModMetadata.Builder(getGameId(), getNormalizedGameVersion())
-				.setName(getGameName());
+		BuiltinModMetadata.Builder metadata = new BuiltinModMetadata.Builder(
+				getGameId(),
+				getNormalizedGameVersion())
+				.setName(getGameName())
+				.setDescription("Hello World program made to demonstrate the Fabric Loader")
+				.setEnvironment(ModEnvironment.UNIVERSAL);
 
 		String version = Runtime.version().toString();
 
@@ -80,7 +70,7 @@ public class HelloWorldGameProvider implements GameProvider {
 
 	@Override
 	public String getEntrypoint() {
-		return entrypoint;
+		return "";
 	}
 
 	@Override
@@ -99,7 +89,7 @@ public class HelloWorldGameProvider implements GameProvider {
 
 	@Override
 	public boolean requiresUrlClassLoader() {
-		return hasModLoader;
+		return false;
 	}
 
 	@Override
@@ -114,42 +104,7 @@ public class HelloWorldGameProvider implements GameProvider {
 		arguments.parse(args);
 
 		gameJars.add(Paths.get(""));
-
-		processArgumentMap(arguments, envType);
-
 		return true;
-	}
-
-	private static void processArgumentMap(Arguments argMap, EnvType envType) {
-		switch (envType) {
-		case CLIENT:
-			if (!argMap.containsKey("accessToken")) {
-				argMap.put("accessToken", "FabricMC");
-			}
-
-			if (!argMap.containsKey("version")) {
-				argMap.put("version", "Fabric");
-			}
-
-			String versionType = "";
-
-			if (argMap.containsKey("versionType") && !argMap.get("versionType").equalsIgnoreCase("release")) {
-				versionType = argMap.get("versionType") + "/";
-			}
-
-			argMap.put("versionType", versionType + "Fabric");
-
-			if (!argMap.containsKey("gameDir")) {
-				argMap.put("gameDir", getLaunchDirectory(argMap).toAbsolutePath().normalize().toString());
-			}
-
-			break;
-		case SERVER:
-			argMap.remove("version");
-			argMap.remove("gameDir");
-			argMap.remove("assetsDir");
-			break;
-		}
 	}
 
 	private static Path getLaunchDirectory(Arguments argMap) {
@@ -179,9 +134,7 @@ public class HelloWorldGameProvider implements GameProvider {
 		for (int i = 0; i < ret.length; i++) {
 			String arg = ret[i];
 
-			if (i + 1 < ret.length
-					&& arg.startsWith("--")
-					&& SENSITIVE_ARGS.contains(arg.substring(2).toLowerCase(Locale.ENGLISH))) {
+			if (i + 1 < ret.length && arg.startsWith("--")) {
 				i++; // skip value
 			} else {
 				ret[writeIdx++] = arg;
@@ -210,24 +163,11 @@ public class HelloWorldGameProvider implements GameProvider {
 
 	@Override
 	public boolean hasAwtSupport() {
-		// MC always sets -XstartOnFirstThread for LWJGL
-		return !LoaderUtil.hasMacOs();
+		return LoaderUtil.hasAwtSupport();
 	}
 
 	@Override
-	public void unlockClassPath(FabricLauncher launcher) {
-		for (Path gameJar : gameJars) {
-			if (logJars.contains(gameJar)) {
-				launcher.setAllowedPrefixes(gameJar);
-			} else {
-				launcher.addToClassPath(gameJar);
-			}
-		}
-
-		for (Path lib : miscGameLibraries) {
-			launcher.addToClassPath(lib);
-		}
-	}
+	public void unlockClassPath(FabricLauncher launcher) {}
 
 	@Override
 	public void launch(ClassLoader loader) {
